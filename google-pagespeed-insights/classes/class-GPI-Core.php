@@ -8,6 +8,10 @@
  * @author Matt Keys <https://profiles.wordpress.org/mattkeys>
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 if ( ! defined( 'GPI_PLUGIN_FILE' ) ) {
 	die();
 }
@@ -44,19 +48,24 @@ class GPI_Core
 
 	public function trigger_gpi()
 	{
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Loopback request without a user session; it is authorized with the one-time token below.
 		if ( ! isset( $_GET['gpi_check_now'] ) ) {
 			return;
 		}
 
-		if ( ! get_option( 'gpi_check_now' ) ) {
+		// Only the request started by run_gpi() knows the token stored in the option.
+		$token = get_option( 'gpi_check_now' );
+		if ( ! is_string( $token ) || 32 !== strlen( $token ) || ! hash_equals( $token, sanitize_text_field( wp_unslash( $_GET['gpi_check_now'] ) ) ) ) {
 			return;
 		}
 
 		delete_option( 'gpi_check_now' );
+		delete_option( 'gpi_check_now_time' );
 
 		$force_recheck_all_urls = isset( $_GET['recheck'] ) ? true : false;
 		$timeout_respawn = isset( $_GET['timeout'] ) ? true : false;
 		$urls_provided = isset( $_GET['urls_provided'] ) ? true : false;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		if ( $urls_provided ) {
 			$urls_to_check = get_option( 'gpi_recheck_urls', array() );
@@ -72,7 +81,7 @@ class GPI_Core
 		if ( ! isset( $schedules['gpi_scheduled_interval'] ) ) {
 			$schedules['gpi_scheduled_interval'] = array(
 				'interval'	=> intval( $this->gpi_options['recheck_interval'] ),
-				'display'	=> esc_html__( 'Interval set in GPI options', 'gpagespeedi' )
+				'display'	=> esc_html__( 'Interval set in GPI options', 'google-pagespeed-insights' )
 			);
 		}
 
@@ -86,19 +95,33 @@ class GPI_Core
 		$gpi_api_error_logs = $wpdb->prefix . 'gpi_api_error_logs';
 		$compare_time = current_time( 'timestamp' ) - WEEK_IN_SECONDS;
 
+		// Score history is kept for a year by default.
+		$gpi_score_history = $wpdb->prefix . 'gpi_score_history';
+		$history_days = absint( apply_filters( 'gpi_score_history_days', 365 ) );
+		if ( $history_days ) {
+			$wpdb->query( $wpdb->prepare( "DELETE FROM $gpi_score_history WHERE checked_at < %d", current_time( 'timestamp' ) - $history_days * DAY_IN_SECONDS ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string; custom plugin table.
+		}
+
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 		$wpdb->query(
-			"
-			DELETE
-			FROM $gpi_api_error_logs
-			WHERE timestamp < $compare_time
-			"
+			$wpdb->prepare(
+				"
+				DELETE
+				FROM $gpi_api_error_logs
+				WHERE timestamp < %d
+				",
+				$compare_time
+			)
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	}
 
 	public function get_lock()
 	{
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 		$lock = $wpdb->get_var(
 			$wpdb->prepare(
 				'SELECT GET_LOCK(%s, %d)',
@@ -113,6 +136,7 @@ class GPI_Core
 	{
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 		$wpdb->get_var(
 			$wpdb->prepare(
 				'SELECT RELEASE_LOCK(%s)',
@@ -136,9 +160,16 @@ class GPI_Core
 
 	public function run_gpi( $recheck = false, $timeout = false, $urls_provided = false )
 	{
-		add_option( 'gpi_check_now', true );
+		$token = get_option( 'gpi_check_now' );
+		if ( ! is_string( $token ) || 32 !== strlen( $token ) ) {
+			$token = wp_generate_password( 32, false );
+			update_option( 'gpi_check_now', $token, false );
+		}
 
-		$query_args = array( 'gpi_check_now' => true, 'cb' => time() );
+		// Lets the admin app notice when the request never arrives (see GPI_Data::loopback_state()).
+		update_option( 'gpi_check_now_time', time(), false );
+
+		$query_args = array( 'gpi_check_now' => $token, 'cb' => time() );
 
 		if ( $recheck ) {
 			$query_args['recheck'] = true;
@@ -172,6 +203,15 @@ class GPI_Core
 	{
 		if ( empty( $this->gpi_options['google_developer_key'] ) ) {
 			return;
+		}
+
+		// A scheduled scan can run before anyone opens wp-admin after an update, so make sure the DB is current.
+		if ( ! isset( $this->gpi_options['version'] ) || version_compare( $this->gpi_options['version'], GPI_VERSION, '<' ) ) {
+			if ( ! class_exists( 'GPI_Activation' ) ) {
+				require_once GPI_DIRECTORY . '/classes/class-GPI-Activation.php';
+			}
+			GPI_Activation::upgrade( $this->gpi_options, get_option( 'gpagespeedi_ui_options' ) );
+			$this->gpi_options = get_option( 'gpagespeedi_options' );
 		}
 
 		// Add a shutdown function to check if the last scan finished successfully, and relaunch the scan if it did not.
@@ -217,6 +257,7 @@ class GPI_Core
 		$this->update_option( 'bad_api_key', false, 'gpagespeedi_options' );
 		$this->update_option( 'pagespeed_disabled', false, 'gpagespeedi_options' );
 		$this->update_option( 'api_restriction', false, 'gpagespeedi_options' );
+		$this->update_option( 'quota_exceeded', false, 'gpagespeedi_options' );
 
 		$user_abort = false;
 		$current_page = isset( $url_groups['completed_pages'] ) ? $url_groups['completed_pages'] : 0;
@@ -293,7 +334,7 @@ class GPI_Core
 
 		// If we skipped all URLs because there are no expired reports, alert the user
 		if ( self::$skipped_all ) {
-			update_option( 'gpi_error_message', esc_html__( 'There are no new pages, or pages with expired pagespeed reports to recheck. To force a recheck of all pages, check the "Recheck All" box before starting reporting.', 'gpagespeedi' ) );
+			update_option( 'gpi_error_message', __( 'There are no new pages, or pages with expired reports, to check. To check every page again, tick "Recheck all" before starting a scan.', 'google-pagespeed-insights' ) );
 		}
 
 		// Release our lock on the DB
@@ -313,21 +354,28 @@ class GPI_Core
 		}
 	}
 
-	private function get_result( $Pagespeed_API, $strategy, $group_type, $item, $recheck_interval, $force_recheck_all_urls, $continue = true )
+	private function get_result( $Pagespeed_API, $strategy, $group_type, $item, $recheck_interval, $force_recheck_all_urls, $continue = true, $retried = false )
 	{
 		global $wpdb;
 
 		// Use max_execution_time set in settings.
-		@set_time_limit( intval( $this->gpi_options['max_execution_time'] ) );
+		@set_time_limit( intval( $this->gpi_options['max_execution_time'] ) ); // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged -- Long scans need the time limit set in the plugin options.
 
 		$object_url = $item['url'];
 
 		$object_id	= $item['objectid'];
 		$custom_url	= ( empty( $item['custom'] ) ) ? false : true;
 
+		// Strategy is used as a column prefix below, so only allow known values.
+		if ( 'desktop' != $strategy && 'mobile' != $strategy ) {
+			$strategy = 'desktop';
+		}
+
 		$gpi_page_stats = $wpdb->prefix . 'gpi_page_stats';
 		$where_column = $this->get_where_column( $custom_url, $group_type );
 
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string; $strategy and $where_column are allowlisted.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 		$existing_url_info = $wpdb->get_row(
 			$wpdb->prepare(
 				"
@@ -338,6 +386,7 @@ class GPI_Core
 				$object_id
 			)
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		$property = $strategy . '_last_modified';
 		$update = ( isset( $existing_url_info->$property ) ) ? true : false;
@@ -361,7 +410,12 @@ class GPI_Core
 				$result['last_modified'] = $time;
 				$this->save_values( $Pagespeed_API, $result, $where_column, $object_id, $object_url, $update, $strategy );
 			} else {
-				$exception_type = $this->exception_handler( $result, $strategy, $update, $group_type, $where_column, $object_id, $object_url );
+				$exception_type = $this->exception_handler( $result, $strategy, $update, $group_type, $where_column, $object_id, $object_url, 'non_fatal', $retried );
+				if ( 'retry' == $exception_type ) {
+					// Per-minute API limit: wait for the next minute and try this page once more.
+					sleep( 60 );
+					return $this->get_result( $Pagespeed_API, $strategy, $group_type, $item, $recheck_interval, $force_recheck_all_urls, $continue, true );
+				}
 				if ( 'fatal' == $exception_type ) {
 					$continue = false;
 				}
@@ -378,6 +432,7 @@ class GPI_Core
 	{
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 		$abort_scan = $wpdb->get_var(
 			"
 				SELECT COUNT(*)
@@ -421,6 +476,8 @@ class GPI_Core
 		$gpi_page_stats = $wpdb->prefix . 'gpi_page_stats';
 		$types	= implode( '|', $types );
 
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 		$reports = $wpdb->get_results(
 			$wpdb->prepare(
 				"
@@ -431,6 +488,7 @@ class GPI_Core
 				$types
 			), ARRAY_A
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		return $reports;
 	}
@@ -529,6 +587,8 @@ class GPI_Core
 			global $wpdb;
 
 			$gpi_custom_urls = $wpdb->prefix . 'gpi_custom_urls';
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 			$custom_urls_array = $wpdb->get_results(
 				"
 					SELECT ID, URL, type
@@ -536,6 +596,7 @@ class GPI_Core
 				",
 				ARRAY_A
 			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$x = 0;
 			foreach ( $custom_urls_array as $custom_url ) {
 				if ( ! isset( $types[ $custom_url['type'] ] ) ) {
@@ -602,14 +663,21 @@ class GPI_Core
 		$gpi_page_stats_values['type'] = sanitize_title( $result['type'] );
 		$gpi_page_stats_values[ sanitize_key( $where_column ) ] = intval( $result[ $where_column ] );
 		$gpi_page_stats_values[ sanitize_key( $strategy . '_last_modified' ) ] = intval( $result['last_modified'] );
-		$gpi_page_stats_values['force_recheck'] = 0;
+		// When both report types are checked, keep the recheck flag until the mobile report is saved too.
+		if ( ! $update || 'both' !== $this->gpi_options['strategy'] || 'mobile' === $strategy ) {
+			$gpi_page_stats_values['force_recheck'] = 0;
+		}
 		$gpi_page_stats_values['response_code'] = intval( $result['responseCode'] );
 		$gpi_page_stats_values[ sanitize_key( $strategy . '_lab_data' ) ] = $Pagespeed_API->get_lab_data( $result['data'] );
 		$gpi_page_stats_values[ sanitize_key( $strategy . '_field_data' ) ] = $Pagespeed_API->get_field_data( $result['data'] );
 		$gpi_page_stats_values[ sanitize_key( $strategy . '_score' ) ] = intval( $score * 100 );
+		$gpi_page_stats_values[ sanitize_key( $strategy . '_categories' ) ] = $Pagespeed_API->get_categories( $result['data'] );
 
 		if ( $update ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 			$wpdb->update( $gpi_page_stats, $gpi_page_stats_values, array( sanitize_key( $where_column ) => intval( $object_id ) ) );
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string; $where_column comes from get_where_column().
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 			$last_updated_id = $wpdb->get_var(
 				$wpdb->prepare(
 					"
@@ -620,13 +688,17 @@ class GPI_Core
 					$object_id
 				)
 			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; WordPress has no API for it.
 			$wpdb->insert( $gpi_page_stats, $gpi_page_stats_values );
 			$last_updated_id = $wpdb->insert_id;
 		}
 
 		$gpi_page_reports = $wpdb->prefix . 'gpi_page_reports';
 		if ( $update ) {
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 			$wpdb->query(
 				$wpdb->prepare(
 					"
@@ -638,15 +710,52 @@ class GPI_Core
 					$strategy
 				)
 			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		}
 
 		$page_reports = $Pagespeed_API->get_page_reports( $result['data'], $last_updated_id, $strategy, $this->gpi_options );
 		if ( ! empty( $page_reports ) ) {
 			foreach ( $page_reports as $page_report ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; WordPress has no API for it.
 				$wpdb->insert( $gpi_page_reports, $page_report );
 			}
 		}
 
+		$this->save_history( $last_updated_id, $strategy, $gpi_page_stats_values, $result['last_modified'] );
+	}
+
+	/**
+	 * Keeps one point per check so the reports can show how scores change over time.
+	 */
+	private function save_history( $page_id, $strategy, $values, $time )
+	{
+		global $wpdb;
+
+		$categories = array();
+		foreach ( (array) maybe_unserialize( $values[ $strategy . '_categories' ] ) as $id => $category ) {
+			$categories[ sanitize_key( $id ) ] = isset( $category['score'] ) ? $category['score'] : null;
+		}
+
+		$metrics = array();
+		foreach ( (array) maybe_unserialize( $values[ $strategy . '_lab_data' ] ) as $metric ) {
+			if ( ! empty( $metric['id'] ) ) {
+				$metrics[ sanitize_key( $metric['id'] ) ] = isset( $metric['numericValue'] ) ? $metric['numericValue'] : null;
+			}
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; WordPress has no API for it.
+		$wpdb->insert(
+			$wpdb->prefix . 'gpi_score_history',
+			array(
+				'page_id'		=> intval( $page_id ),
+				'strategy'		=> sanitize_key( $strategy ),
+				'score'			=> intval( $values[ $strategy . '_score' ] ),
+				'categories'	=> wp_json_encode( $categories ),
+				'metrics'		=> wp_json_encode( $metrics ),
+				'checked_at'	=> intval( $time )
+			),
+			array( '%d', '%s', '%d', '%s', '%s', '%d' )
+		);
 	}
 
 	public function save_bad_request( $type, $where_column, $object_id, $object_url, $message = true )
@@ -654,6 +763,8 @@ class GPI_Core
 		global $wpdb;
 		$gpi_page_blacklist = $wpdb->prefix . 'gpi_page_blacklist';
 
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 		$row_exist = $wpdb->get_row(
 			$wpdb->prepare(
 				"
@@ -665,6 +776,7 @@ class GPI_Core
 			),
 			ARRAY_A
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		if ( ! $row_exist ) {
 			$gpi_page_blacklist_values = array();
@@ -673,6 +785,7 @@ class GPI_Core
 				$this->update_option( 'new_ignored_items', true, 'gpagespeedi_options' );
 			}
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; WordPress has no API for it.
 			$wpdb->insert( $gpi_page_blacklist,
 				array(
 					'URL'			=> $object_url,
@@ -683,13 +796,49 @@ class GPI_Core
 		}
 	}
 
-	public function exception_handler( $result, $strategy, $update, $url_group_type, $where_column, $object_id, $object_url, $error_type = 'non_fatal' )
+	public function exception_handler( $result, $strategy, $update, $url_group_type, $where_column, $object_id, $object_url, $error_type = 'non_fatal', $retried = false )
 	{
 		$errors = isset( $result['data']->error->errors ) ? $result['data']->error->errors : false;
 
-		if ( isset( $errors[0]->reason ) && $errors[0]->reason == 'keyInvalid' ) {
+		// Current API errors put the specific reason (e.g. API_KEY_INVALID) in error.details.
+		$detail_reason = '';
+		$quota_limit = '';
+		if ( isset( $result['data']->error->details ) && is_array( $result['data']->error->details ) ) {
+			foreach ( $result['data']->error->details as $detail ) {
+				if ( isset( $detail->reason ) ) {
+					$detail_reason = $detail->reason;
+					$quota_limit = isset( $detail->metadata->quota_limit ) ? (string) $detail->metadata->quota_limit : '';
+					break;
+				}
+			}
+		}
+
+		$rate_limited = 'RATE_LIMIT_EXCEEDED' === $detail_reason || 429 == $result['responseCode'] || ( isset( $errors[0]->reason ) && $errors[0]->reason == 'rateLimitExceeded' );
+
+		if ( $rate_limited && false !== stripos( $quota_limit, 'PerMinute' ) && ! $retried ) {
+
+			// Too many requests this minute (for example several sites sharing one key): retry the page.
+			$error_type = 'retry';
+
+		} else if ( $rate_limited ) {
+
+			// The daily quota is used up (or the per-minute limit was hit again): stop until it resets.
+			$this->update_option( 'quota_exceeded', true, 'gpagespeedi_options' );
+			$error_type = 'fatal';
+
+		} else if ( 'API_KEY_INVALID' === $detail_reason || ( isset( $errors[0]->reason ) && $errors[0]->reason == 'keyInvalid' ) ) {
 
 			$this->update_option( 'bad_api_key', true, 'gpagespeedi_options' );
+			$error_type = 'fatal';
+
+		} else if ( 'SERVICE_DISABLED' === $detail_reason ) {
+
+			$this->update_option( 'pagespeed_disabled', true, 'gpagespeedi_options' );
+			$error_type = 'fatal';
+
+		} else if ( 0 === strpos( $detail_reason, 'API_KEY_' ) && false !== strpos( $detail_reason, '_BLOCKED' ) ) {
+
+			$this->update_option( 'api_restriction', true, 'gpagespeedi_options' );
 			$error_type = 'fatal';
 
 		} else if ( isset( $errors[0]->reason ) && $errors[0]->reason == 'badRequest' ) {
@@ -731,6 +880,7 @@ class GPI_Core
 
 			$gpi_api_error_logs = $wpdb->prefix . 'gpi_api_error_logs';
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; WordPress has no API for it.
 			$wpdb->insert( $gpi_api_error_logs,
 				array(
 					'URL'		=> $object_url,
@@ -751,12 +901,15 @@ class GPI_Core
 		global $wpdb;
 
 		$gpi_page_blacklist = $wpdb->prefix . 'gpi_page_blacklist';
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin table; WordPress has no API for it.
 		$blacklist_urls = $wpdb->get_col(
 			"
 				SELECT URL
 				FROM $gpi_page_blacklist
 			"
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		return $blacklist_urls;
 	}
@@ -766,7 +919,7 @@ class GPI_Core
 		if ( 'gpagespeedi_ui_options' == $opt_group ) {
 			$options = get_option( 'gpagespeedi_ui_options' );
 		} else {
-			$options = $this->gpi_options;
+			$options = get_option( 'gpagespeedi_options' );
 		}
 
 		$options[ $opt_key ] = $opt_val;

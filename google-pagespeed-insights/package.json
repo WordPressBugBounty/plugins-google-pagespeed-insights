@@ -1,0 +1,25 @@
+{
+	"name": "google-pagespeed-insights",
+	"version": "5.0.0",
+	"private": true,
+	"description": "Admin interface for Insights from Google PageSpeed",
+	"license": "GPL-2.0-or-later",
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start",
+		"lint:js": "wp-scripts lint-js src",
+		"lint:css": "wp-scripts lint-style \"src/**/*.scss\"",
+		"plugin-zip": "wp-scripts plugin-zip"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "35.0.0"
+	},
+	"files": [
+		"assets",
+		"build",
+		"classes",
+		"src",
+		"google-pagespeed-insights.php",
+		"readme.txt"
+	]
+}

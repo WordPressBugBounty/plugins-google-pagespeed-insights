@@ -2,10 +2,15 @@
 /*
 Plugin Name: Insights from Google PageSpeed
 Plugin URI: http://mattkeys.me
-Description: Get insights from the Google Pagespeed API right in your WordPress dashboard
+Description: Check every page with Google PageSpeed Insights (Performance, Core Web Vitals, Accessibility, Best Practices, SEO and AI agents) and follow your scores in wp-admin.
 Author: Matt Keys
-Version: 4.0.8
+Version: 5.0.0
 Author URI: http://mattkeys.me
+Requires at least: 6.6
+Requires PHP: 7.2
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: google-pagespeed-insights
 */
 
 /*  Copyright 2016  Matt Keys  (email : me@mattkeys.me)
@@ -22,6 +27,10 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 // Path to this file
 if ( ! defined( 'GPI_PLUGIN_FILE' ) ) {
@@ -45,19 +54,15 @@ if ( ! defined( 'GPI_BASENAME' ) ) {
 
 // Internal version number 
 if ( ! defined( 'GPI_VERSION' ) ) {
-	define( 'GPI_VERSION', '4.0.8' );
+	define( 'GPI_VERSION', '5.0.0' );
 }
 
 if ( is_admin() ) {
 	require 'classes/class-GPI-Activation.php';
 	require 'classes/class-GPI-Uninstall.php';
 	require 'classes/class-GPI-Admin.php';
-
-	$doaction = ( isset( $_REQUEST['action'] ) && -1 != $_REQUEST['action'] ) ? true : false;
-
-	if ( $doaction && ( isset( $_GET['page'] ) && 'google-pagespeed-insights' == $_GET['page'] ) ) {
-		require 'classes/class-GPI-Actions.php';
-	}
 }
 
 require 'classes/class-GPI-Core.php';
+require 'classes/class-GPI-Data.php';
+require 'classes/class-GPI-REST.php';

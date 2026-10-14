@@ -8,6 +8,10 @@
  * @author Matt Keys <https://profiles.wordpress.org/mattkeys>
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 if ( ! defined( 'GPI_PLUGIN_FILE' ) ) {
 	die();
 }
@@ -25,13 +29,19 @@ class GPI_Uninstall
 		$gpi_custom_urls		= $wpdb->prefix . 'gpi_custom_urls';
 		$gpi_summary_snapshots	= $wpdb->prefix . 'gpi_summary_snapshots';
 		$gpi_api_error_logs		= $wpdb->prefix . 'gpi_api_error_logs';
+		$gpi_score_history		= $wpdb->prefix . 'gpi_score_history';
 	 
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- The plugin's own tables are created, changed or removed here.
 		$wpdb->query( "DROP TABLE $gpi_page_stats" );
 		$wpdb->query( "DROP TABLE $gpi_page_reports" );
 		$wpdb->query( "DROP TABLE $gpi_page_blacklist" );
 		$wpdb->query( "DROP TABLE $gpi_custom_urls" );
 		$wpdb->query( "DROP TABLE $gpi_summary_snapshots" );
 		$wpdb->query( "DROP TABLE $gpi_api_error_logs" );
+		$wpdb->query( "DROP TABLE IF EXISTS $gpi_score_history" );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		delete_option('gpagespeedi_options');
 		delete_option('gpagespeedi_ui_options');
@@ -42,6 +52,7 @@ class GPI_Uninstall
 		delete_option('gpi_error_message');
 		delete_option('gpi_abort_scan');
 		delete_option('gpi_check_now');
+		delete_option('gpi_check_now_time');
 
 		wp_clear_scheduled_hook( 'gpi_prune_logs' );
 		wp_clear_scheduled_hook( 'googlepagespeedinsightsworker' );

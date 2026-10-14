@@ -8,6 +8,10 @@
  * @author Matt Keys <https://profiles.wordpress.org/mattkeys>
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 if ( ! defined( 'GPI_PLUGIN_FILE' ) ) {
 	die();
 }
@@ -24,13 +28,17 @@ class GPI_Activation
 			$gpi_page_reports_table			= $wpdb->prefix . 'gpi_page_reports';
 			$gpi_summary_snapshots_table	= $wpdb->prefix . 'gpi_summary_snapshots';
 
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is $wpdb->prefix plus a fixed string.
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- The plugin's own tables are created, changed or removed here.
 			$wpdb->query( "ALTER TABLE $gpi_page_stats_table DROP COLUMN desktop_page_stats" );
 			$wpdb->query( "ALTER TABLE $gpi_page_stats_table DROP COLUMN mobile_page_stats" );
 			$wpdb->query( "ALTER TABLE $gpi_page_reports_table DROP COLUMN rule_impact" );
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 
 			$wpdb->query( "TRUNCATE TABLE $gpi_page_stats_table" );
 			$wpdb->query( "TRUNCATE TABLE $gpi_page_reports_table" );
 			$wpdb->query( "TRUNCATE TABLE $gpi_summary_snapshots_table" );
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		}
 
 		if ( $update_options ) {
@@ -38,29 +46,29 @@ class GPI_Activation
 				'google_developer_key'		=> isset( $gpagespeedi_options['google_developer_key'] ) ? sanitize_text_field( $gpagespeedi_options['google_developer_key'] ) : '',
 				'response_language' 		=> isset( $gpagespeedi_options['response_language'] ) ? sanitize_text_field( $gpagespeedi_options['response_language'] ) : 'en_US',
 				'strategy'					=> isset( $gpagespeedi_options['strategy'] ) ? sanitize_text_field( $gpagespeedi_options['strategy'] ) : 'desktop',
-				'store_screenshots'			=> isset( $gpagespeedi_options['store_screenshots'] ) ? 1 : 0,
+				'store_screenshots'			=> ! empty( $gpagespeedi_options['store_screenshots'] ) ? 1 : 0,
 				'max_execution_time' 		=> isset( $gpagespeedi_options['max_execution_time'] ) ? intval( $gpagespeedi_options['max_execution_time'] ) : 300,
 				'max_run_time' 				=> isset( $gpagespeedi_options['max_run_time'] ) ? intval( $gpagespeedi_options['max_run_time'] ) : 0,
 				'sleep_time'		 		=> isset( $gpagespeedi_options['sleep_time'] ) ? intval( $gpagespeedi_options['sleep_time'] ) : 0,
 				'recheck_interval' 			=> isset( $gpagespeedi_options['recheck_interval'] ) ? intval( $gpagespeedi_options['recheck_interval'] ) : 86400,
-				'use_schedule' 				=> isset( $gpagespeedi_options['use_schedule'] ) ? 1 : 0,
-				'check_pages' 				=> isset( $gpagespeedi_options['check_pages'] ) ? 1 : 0,
-				'check_posts' 				=> isset( $gpagespeedi_options['check_posts'] ) ? 1 : 0,
+				'use_schedule' 				=> ! empty( $gpagespeedi_options['use_schedule'] ) ? 1 : 0,
+				'check_pages' 				=> ! empty( $gpagespeedi_options['check_pages'] ) ? 1 : 0,
+				'check_posts' 				=> ! empty( $gpagespeedi_options['check_posts'] ) ? 1 : 0,
 				'cpt_whitelist'				=> isset( $gpagespeedi_options['cpt_whitelist'] ) ? $gpagespeedi_options['cpt_whitelist'] : '',
-				'check_categories' 			=> isset( $gpagespeedi_options['check_categories'] ) ? 1 : 0,
-				'check_custom_urls' 		=> isset( $gpagespeedi_options['check_custom_urls'] ) ? 1 : 0,
-				'first_run_complete' 		=> isset( $gpagespeedi_options['first_run_complete'] ) ? 1 : 0,
-				'last_run_finished' 		=> isset( $gpagespeedi_options['last_run_finished'] ) ? 1 : 0,
-				'bad_api_key'		 		=> isset( $gpagespeedi_options['bad_api_key'] ) ? 1 : 0,
-				'pagespeed_disabled' 		=> isset( $gpagespeedi_options['pagespeed_disabled'] ) ? 1 : 0,
-				'api_restriction'			=> isset( $gpagespeedi_options['api_restriction'] ) ? 1 : 0,
-				'new_ignored_items'		 	=> isset( $gpagespeedi_options['new_ignored_items'] ) ? 1 : 0,
-				'backend_error'				=> isset( $gpagespeedi_options['backend_error'] ) ? 1 : 0,
-				'check_logs'				=> isset( $gpagespeedi_options['check_logs'] ) ? 1 : 0,
-				'log_api_errors'			=> isset( $gpagespeedi_options['log_api_errors'] ) ? 1 : 0,
+				'check_categories' 			=> ! empty( $gpagespeedi_options['check_categories'] ) ? 1 : 0,
+				'check_custom_urls' 		=> ! empty( $gpagespeedi_options['check_custom_urls'] ) ? 1 : 0,
+				'first_run_complete' 		=> ! empty( $gpagespeedi_options['first_run_complete'] ) ? 1 : 0,
+				'last_run_finished' 		=> ! empty( $gpagespeedi_options['last_run_finished'] ) ? 1 : 0,
+				'bad_api_key'		 		=> ! empty( $gpagespeedi_options['bad_api_key'] ) ? 1 : 0,
+				'pagespeed_disabled' 		=> ! empty( $gpagespeedi_options['pagespeed_disabled'] ) ? 1 : 0,
+				'api_restriction'			=> ! empty( $gpagespeedi_options['api_restriction'] ) ? 1 : 0,
+				'new_ignored_items'		 	=> ! empty( $gpagespeedi_options['new_ignored_items'] ) ? 1 : 0,
+				'backend_error'				=> ! empty( $gpagespeedi_options['backend_error'] ) ? 1 : 0,
+				'check_logs'				=> ! empty( $gpagespeedi_options['check_logs'] ) ? 1 : 0,
+				'log_api_errors'			=> ! empty( $gpagespeedi_options['log_api_errors'] ) ? 1 : 0,
 				'new_activation_message'	=> false,
 				'heartbeat'					=> isset( $gpagespeedi_options['heartbeat'] ) ? sanitize_text_field( $gpagespeedi_options['heartbeat'] ) : 'fast',
-				'mutex_id'					=> isset( $gpagespeedi_options['mutex_id'] ) ? intval( $gpagespeedi_options['mutex_id'] ) : time() . rand(),
+				'mutex_id'					=> isset( $gpagespeedi_options['mutex_id'] ) ? intval( $gpagespeedi_options['mutex_id'] ) : time() . wp_rand(),
 				'version'					=> GPI_VERSION
 			);
 			update_option( 'gpagespeedi_options', $update_values );
@@ -70,6 +78,11 @@ class GPI_Activation
 				'view_preference'			=> isset( $gpagespeedi_ui_options['view_preference'] ) ? $gpagespeedi_ui_options['view_preference'] : 'desktop',
 			);
 			update_option( 'gpagespeedi_ui_options', $update_ui_values );
+		}
+
+		// 5.0 stores every Lighthouse category and Core Web Vitals; older reports need a recheck to show them.
+		if ( isset( $gpagespeedi_options['version'] ) && version_compare( $gpagespeedi_options['version'], '5.0', '<' ) ) {
+			update_option( 'gpagespeedi_upgrade_recheck_required', true );
 		}
 
 		self::db();
@@ -97,13 +110,14 @@ class GPI_Activation
 			'bad_api_key'		 		=> false, 			// true if API reports the API key is bad
 			'pagespeed_disabled' 		=> false, 			// true if API reports the Pagespeed API not enabled		
 			'api_restriction'			=> false,			// True if API reports that it cannot check pages from this IP/Hostname
+			'quota_exceeded'			=> false,			// true if the API key's daily quota is used up
 			'new_ignored_items'		 	=> false, 			// true if new pages have been added to 'ignore' due to a bad request
 			'backend_error'				=> false, 			// true if a 'backendErorr' is returned from the API
 			'check_logs'				=> false, 			// true if a 'badRequest' is returned from the API
 			'log_api_errors'			=> false,			// log uncaught API exceptions to txt files in FTP root
 			'new_activation_message'	=> true, 			// display welcome messsage on first-time activation of plugin
 			'heartbeat'					=> 'standard',		// Heartbeat refresh interval: fast, slow, standard, or disabled
-			'mutex_id'					=> time() . rand(),	// Unique ID to prevent DB lock collision with other installations on the same MySQL server
+			'mutex_id'					=> time() . wp_rand(),	// Unique ID to prevent DB lock collision with other installations on the same MySQL server
 			'version'					=> GPI_VERSION		// Internal version number used to trigger DB/Options updates in new releases
 		);
 		add_option( 'gpagespeedi_options', $default_values );
@@ -129,6 +143,7 @@ class GPI_Activation
 		$gpi_custom_urls_table			= $wpdb->prefix . 'gpi_custom_urls';
 		$gpi_summary_snapshots_table	= $wpdb->prefix . 'gpi_summary_snapshots';
 		$gpi_api_error_logs_table		= $wpdb->prefix . 'gpi_api_error_logs';
+		$gpi_score_history_table		= $wpdb->prefix . 'gpi_score_history';
 
 		$charset_collate = $wpdb->get_charset_collate();
 
@@ -142,6 +157,8 @@ class GPI_Activation
 			mobile_lab_data longtext,
 			desktop_field_data longtext,
 			mobile_field_data longtext,
+			desktop_categories longtext,
+			mobile_categories longtext,
 			type varchar(200) DEFAULT NULL,
 			object_id bigint(20) DEFAULT NULL,
 			term_id bigint(20) DEFAULT NULL,
@@ -162,10 +179,13 @@ class GPI_Activation
 			rule_key varchar(200) NOT NULL,
 			rule_name varchar(200) DEFAULT NULL,
 			rule_type varchar(200) DEFAULT NULL,
+			rule_category varchar(50) DEFAULT NULL,
+			rule_group varchar(50) DEFAULT NULL,
 			rule_score decimal(5,2) DEFAULT NULL,
 			rule_blocks longtext,
 			PRIMARY KEY  (ID),
-			KEY page_id (page_id)
+			KEY page_id (page_id),
+			KEY page_strategy (page_id,strategy)
 		) $charset_collate;";
 
 		$gpi_page_blacklist = "CREATE TABLE $gpi_page_blacklist_table (
@@ -212,7 +232,21 @@ class GPI_Activation
 		dbDelta( $gpi_page_blacklist );
 		dbDelta( $gpi_custom_urls );
 		dbDelta( $gpi_summary_snapshots );
+		$gpi_score_history = "CREATE TABLE $gpi_score_history_table (
+			ID bigint(20) NOT NULL AUTO_INCREMENT,
+			page_id bigint(20) NOT NULL,
+			strategy varchar(20) NOT NULL,
+			score int(3) DEFAULT NULL,
+			categories text,
+			metrics text,
+			checked_at bigint(20) NOT NULL,
+			PRIMARY KEY  (ID),
+			KEY page_strategy (page_id,strategy),
+			KEY checked_at (checked_at)
+		) $charset_collate;";
+
 		dbDelta( $gpi_api_error_logs );
+		dbDelta( $gpi_score_history );
 	}
 
 }

@@ -1,29 +1,44 @@
 === Insights from Google PageSpeed ===
-Contributors: mattkeys
-Tags: SEO, performance, page speed, pagespeed, pagespeed insights
-Requires at least: 3.6
-Tested up to: 6.5
-Stable tag: 4.0.8
+Contributors: mattkeys, plugstack
+Tags: SEO, performance, page speed, pagespeed insights, core web vitals
+Requires at least: 6.6
+Tested up to: 7.1
+Requires PHP: 7.2
+Stable tag: 5.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Use Insights from Google PageSpeed to increase your sites performance, your search engine ranking, and your visitors browsing experience.
+Use Insights from Google PageSpeed to improve your site's performance, Core Web Vitals, search engine ranking and your visitors' browsing experience.
 
 == Description ==
 
-Google Pagespeed Insights is a tool that empowers you to make decisions that increase the performance of your website. Recommendations from Google Pagespeed are based upon current industry best practices for desktop and mobile web performance.
+Google PageSpeed Insights is a tool that empowers you to make decisions that increase the performance of your website. Recommendations from Google PageSpeed are based upon current industry best practices for desktop and mobile web performance.
 
-Through the addition of advanced data visualization, tagging, filtering, and snapshot technology, Insights from Google PageSpeed provides a comprehensive solution for any webmaster looking to increase their site performance, their search engine ranking, and their visitors browsing experience.
+Through the addition of advanced data visualization, tagging, filtering, and snapshot technology, Insights from Google PageSpeed provides a comprehensive solution for any webmaster looking to increase their site performance, their search engine ranking, and their visitors' browsing experience.
+
+Version 5 brings the plugin up to date with the PageSpeed Insights you know from pagespeed.web.dev: every page now gets all Lighthouse scores and real-user Core Web Vitals, in a new and faster dashboard in wp-admin.
 
 = Detailed Page Reporting =
 
-Sort your page reports by their Page Speed Score to prioritize the largest areas of opportunity on your site. Page reports utilize easy to read visualizations that allow you to quickly focus in on the most important data to improve your sites performance.
+Sort your page reports by their PageSpeed score to prioritize the largest areas of opportunity on your site. Page reports utilize easy to read visualizations that allow you to quickly focus in on the most important data to improve your site's performance.
+
+Each report lists the insights and diagnostics Google found, with the estimated savings, the resources involved and WordPress specific tips. You can also see the page's score history, a screenshot and a filmstrip of how it loads.
+
+= Performance, Accessibility, Best Practices, SEO and AI Agents =
+
+Every page is scored in all five Lighthouse categories, the same ones you see on pagespeed.web.dev. Performance comes with the lab metrics behind it: Largest Contentful Paint, Total Blocking Time, Cumulative Layout Shift, First Contentful Paint and Speed Index.
+
+The AI Agents category (Lighthouse "Agentic Browsing") checks how well AI agents and answer engines can read and use your pages, for example whether you have a valid llms.txt file. Google still marks it as experimental.
+
+= Core Web Vitals from Real Users =
+
+When Google has enough Chrome UX Report data for a page or for your whole site, reports show how real visitors experienced it: LCP, INP and CLS, the share of good, average and poor visits, and whether the page passes the Core Web Vitals assessment.
 
 = Report Summaries =
 
-Report Summaries are a powerful and exclusive feature of Insights from Google PageSpeed. Summaries display your average Page Score, largest areas for improvement across ALL reports, as well as best and lowest performing pages. Report summaries can be filtered to narrow results by: Pages, Posts, Categories, Custom URLs, and Custom Post Types.
+Report Summaries are a powerful and exclusive feature of Insights from Google PageSpeed. Summaries display your average scores, the largest areas for improvement across ALL reports, as well as your best and lowest performing pages. Report Summaries can be filtered to narrow results by: Pages, Posts, Categories, Custom URLs, and Custom Post Types.
 
-Using Report Summaries allows you to ‘zoom out’ from the page-level and better understand the big picture of your sites performance.
+Using Report Summaries allows you to 'zoom out' from the page level and better understand the big picture of your site's performance. Charts show how your scores change over time and how many of your pages are good, need work or are poor.
 
 = Desktop and Mobile Page Reports =
 
@@ -33,9 +48,9 @@ Toggle back and forth between report types to see specific suggestions for impro
 
 = Report Snapshots =
 
-The Report Snapshot tool builds on the power of Report Summaries, to provide historical “Point In Time” data about your website.
+The Report Snapshot tool builds on the power of Report Summaries, to provide historical "Point In Time" data about your website.
 
-Take a snapshot of any Report Summary screen to store that data for future retrieval. Add comments to your snapshots to provide additional meaning, such as “Before Installing W3 Total Cache.” Additionally, filter a Report Summary before taking a Snapshot to save a summary of the filtered data.
+Take a snapshot of any Report Summary screen to store that data for future retrieval. Add comments to your snapshots to provide additional meaning, such as "Before Installing W3 Total Cache." Additionally, filter a Report Summary before taking a Snapshot to save a summary of the filtered data.
 
 = Snapshot Comparison Tool =
 
@@ -45,7 +60,7 @@ Take a Report Snapshot before installing new plugins, or before implementing per
 
 = Add/Import Custom URLs =
 
-Easily add additional URLs for inclusion in Pagespeed Reports. Even add URLs for non-WordPress sites, even if they are not hosted on your server. URLs can be added manually, or upload a properly formatted XML sitemap to add multiple pages at once.
+Easily add additional URLs for inclusion in PageSpeed Reports. Even add URLs for non-WordPress sites, even if they are not hosted on your server. URLs can be added manually, imported from a CSV file (such as a Search Console export), or you can upload a properly formatted XML sitemap to add multiple pages at once.
 
 Custom URLs can be tagged and filtered in Report Summaries. Take Report Snapshots of your Custom URLs just like you would with any other report type.
 
@@ -53,88 +68,136 @@ Custom URLs can be tagged and filtered in Report Summaries. Take Report Snapshot
 
 Configure Insights from Google PageSpeed to automatically recheck your site on a Daily, Weekly, Bi-Monthly, or Monthly basis.
 
-With each scan, any new pages or posts will be discovered, and existing reports will be updated to reflect any changes to your site, as well as any changes in the Pagespeed recommendations.
+With each scan, any new pages or posts will be discovered, and existing reports will be updated to reflect any changes to your site, as well as any changes in the PageSpeed recommendations.
 
 = Additional Languages =
 
-* (v1.x translation) Russian Translation provided by: Ivanka from [coupofy.com](http://coupofy.com)
-* (v1.x translation) Spanish Translation provided by: Ogi Djuraskovic from [firstsiteguide.com](http://firstsiteguide.com)
-* (v1.x translation) Serbian Translation provided by: Ogi Djuraskovic from [firstsiteguide.com](http://firstsiteguide.com)
+Translations are managed on translate.wordpress.org, and WordPress installs the one for your site's language automatically. Thanks to the translators of earlier versions:
 
+* Russian Translation provided by: Ivanka from [coupofy.com](http://coupofy.com)
+* Spanish Translation provided by: Ogi Djuraskovic from [firstsiteguide.com](http://firstsiteguide.com)
+* Serbian Translation provided by: Ogi Djuraskovic from [firstsiteguide.com](http://firstsiteguide.com)
 
 == Installation ==
 
-1. Login to your WordPress Admin page (usually http://yourdomain.com/wp-admin)
-2. Navigate to the Plugins screen and then click the "Add New" button
-3. Click on the "Upload" link near the top of the page and browse for the Insights from Google PageSpeed zip file
-4. Upload the file, and click "Activate Plugin" after the installation completes
-5. Congratulations, installation is complete; proceed to configuration.
+1. In wp-admin, go to Plugins > Add New, search for "Insights from Google PageSpeed" and click "Install Now", then "Activate".
+2. Go to Tools > Pagespeed Insights > Settings and enter your Google API key.
+3. Click "Start scan".
 
-= Configuration =
+Full documentation: [plugstack.dev/docs/google-pagespeed-insights](https://plugstack.dev/docs/google-pagespeed-insights/)
 
-An extended version of the folliowing instructions as well as other documentation are included in the "documentation" folder of this plugin.
+= Getting an API key =
 
-Google Pagespeed Insights requires a Google API Key. Keys are free and can be obtained from Google. In order to get a key, you will need a Google account such as a GMail account. If you do not already have a Google account you can create one here: https://accounts.google.com/SignUp.
+The plugin uses the free Google PageSpeed Insights API, which needs an API key from your Google account.
 
-1. Navigate to https://console.developers.google.com/
-2. Login with your Google Account (Create a Google account if you do not have one)
-3. Create a new API Key and enable the Google Pagespeed Insights API* (see note about restrictions)
-4. Paste your API Key into the Options page of Insights from Google PageSpeed
+1. Open the [PageSpeed Insights API in the Google Cloud Console](https://console.cloud.google.com/apis/library/pagespeedonline.googleapis.com), create or pick a project and click "Enable".
+2. Go to APIs & Services > Credentials and create an API key.
+3. Paste the key into Tools > Pagespeed Insights > Settings, click "Check key" and save.
 
-* Try first creating the API key without any 'restrictions'. In my testing there seems to be a bug with using restricitons with the Pagespeed API.
+If you restrict the key, allow requests from your server's IP address. HTTP referrer restrictions do not work, because the requests are sent by your server.
+
+A [step-by-step guide with screenshots](https://plugstack.dev/docs/google-pagespeed-insights/google-api-key/) is in the documentation.
 
 = Requirements =
 
-* Google API Key [https://console.developers.google.com/](https://code.google.com/apis/console/)
-* WordPress 3.6 or Newer
+* WordPress 6.6 or newer
+* PHP 7.2 or newer
+* A Google API key
+* Pages must be publicly reachable, because Google loads them from its own servers
 
-== Troubleshooting ==
+== Frequently Asked Questions ==
 
-**Please find the below list of potential issues that you may encounter, and the recommended next steps.**
+= I entered my API key, but no reports show up. =
 
-= I entered my API Key and saved the Options, but no Reports are showing up in the Report List. =
+* Google needs to load each page to create its report, so your pages must be publicly accessible on the internet. Local and password protected sites can't be checked; add public URLs under Custom URLs instead.
+* Check that the key is correct and that the "PageSpeed Insights API" is enabled for it in the Google Cloud Console.
+* Turn on "Log API errors" in Settings > Advanced and look at the logs after the next scan.
 
-- Google Pagespeed needs to be able to load each page to create its report. Make sure that your pages are publicly accessible over the internet.
-- Ensure that your API key is entered correctly, and that you have enabled the "PageSpeed Insights API" from the Google API Console.
-- In the Options page, under "Advanced Configuration" there is a checkbox called "Log API Exceptions". Any API exception that is not caught and handled automatically will be stored for up to 7 days. This log information can be very helpful when diagnosing issues.
+= Scans stop before every page is checked. =
 
-= Page report checks never finish all of the way, I have to press "Start Reporting" again and again to get it to finish checking all of my pages. =
+* Your server may be stopping the scan request. Raise "Maximum execution time" in Settings > Advanced.
+* Some hosts don't allow that. In that case set "Maximum script run time": the scan then restarts itself after that time. Start low (30 seconds) and raise it step by step.
 
-- If the reports seem to always run for a certain length of time before stopping unexpectedly, you may be exceeding your servers Max Execution time. Try increasing the value in Options->Advanced Configuration "Maximum Execution Time".
-- Some web hosting providers do not allow the Maximum Execution Time to be overridden or increased. In that case you can try setting the Maximum Script Run Time. This will make the script run for the set period of time, then stop and spawn a new script, to get around timeout issues. Start with a low value, and test. Increase the value one step at a time until you find the largest value that allows your scans to finish successfully.
+= The scan does not start. =
 
-= An error was reported while trying to check one of my pages, and it has been added to the Ignored Pages section. =
+Scans run in the background through a request from your site to itself (a "loopback" request). If a maintenance or "coming soon" mode, a plugin that requires a login for the whole site, or your host blocks that request, the plugin shows a warning after about 20 seconds. Tools > Site Health shows whether loopback requests work.
 
-- Navigate to the Ignored Pages tab, find the page, and click "reactivate" to try it again.
-- If the page fails again, ensure that the page is publicly accessible from the internet. Non-public pages cannot be checked.
-- In some rare cases, pages are not able to be scanned by the Pagespeed API. Try checking your page manually here: https://developers.google.com/speed/pagespeed/insights/. If the page fails to be checked, report the issue to Google so that they can diagnose further.
+= A page was added to Ignored URLs. =
 
-= I received a Javascript or PHP error. =
+Google could not load it. Make sure the page is public, then click "Reactivate" on the Ignored screen to try again. You can also test the page at [pagespeed.web.dev](https://pagespeed.web.dev/).
 
-- If the error appeared while Google Pagespeed was checking pages, you may have loaded the page while it was storing data. Refresh the page in a couple seconds to see if the issue has gone away.
-- If issues persist please report the problem with as much information as you can gather, including: What page you were on, the exact text of the error, or a screenshot of the error.
-- In the Options page, under "Advanced Configuration" there is a checkbox called "Log API Exceptions". Any API exception that is not caught and handled automatically will be logged for up to 7 days. This log information can be very helpful when diagnosing issues
+= Why are my scores lower than on pagespeed.web.dev? =
 
-= My Page Scores seem really low. When I click "Recheck Results" when viewing Report Details, the score jumps up dramatically. =
+Lab scores change from run to run, mostly because of how fast your server responds at that moment. Recheck the page to compare, and look at the Real-user experience section, which is not affected by single runs.
 
-- Your server may have been responding slowly when the first report was generated. A slow server response time can have a large impact on your Page Speed Score. If these problems happen frequently you may want to talk with your hosting provider about the problem, or look into alternative hosting providers.
+= Why is there no real-user data? =
 
-= I want to clear out all of the current page reports and start over. =
+Google only publishes Chrome UX Report data for pages and sites with enough visitors. Smaller sites often have none; the lab results still show what to improve.
 
-1. Navigate to the "Options" tab
-2. Expand the "Advanced Configuration" section.
-3. Find the "Delete Data" Dropdown
-4. Select "Delete Reports Only" to remove all Page Reports
-5. Or Select "Delete EVERYTHING" to remove all Page Reports, Custom URLs, Snapshots, and Ignored Pages
+= What is the AI Agents score? =
+
+It is the Lighthouse "Agentic Browsing" category. It checks things like a valid llms.txt file and a well-formed accessibility tree, which help AI agents and answer engines use your site. Google marks it as experimental, so the checks may change.
+
+= How do I delete all reports and start over? =
+
+Go to Settings > Delete data and click "Delete reports" (keeps custom URLs and snapshots) or "Delete everything".
+
+== External services ==
+
+This plugin connects to the following third-party service.
+
+= Google PageSpeed Insights API =
+
+Used to generate the reports shown by this plugin. Nothing is sent to this API until you enter your own Google API key.
+
+* What is sent: the URL of each page being checked, your Google API key, the report type (desktop or mobile), the report language and the Lighthouse categories to check.
+* When: every time a page is checked. This happens when you start a scan or recheck a report, after adding custom URLs or reactivating ignored URLs, and during scheduled scans if automatic rechecks are on. When you click "Check key" in the Settings, only the API key is sent, to confirm it works.
+* Endpoint: https://www.googleapis.com/pagespeedonline/v5/runPagespeed
+* [Google APIs Terms of Service](https://developers.google.com/terms)
+* [Google Terms of Service](https://policies.google.com/terms)
+* [Google Privacy Policy](https://policies.google.com/privacy)
+
+The charts in wp-admin are drawn by the plugin itself; no chart library is loaded from a third-party server.
+
+The ShortPixel suggestion shown next to image audits is an affiliate link and is only loaded when you click it.
 
 == Screenshots ==
 
-1. Filter reports by Pages, Posts, Category Indexes, or Custom Post Types. Sort Report Lists by Page Score to see your highest and lowest performing pages.
-2. Separate reports for Desktop and Mobile page reports. Check each report to receive platform specific recommendations to increase your sites performance.
-3. Configure Google Report Language, Report Types, and choose which WordPress URLs to run reports on.
-4. View in-depth report details for recommendations on increasing your sites performance.
+1. Overview: category scores, score trend, Performance distribution, lab metrics and top opportunities.
+2. Reports list with trends, Core Web Vitals and category scores.
+3. Page report with all categories, lab metrics, real-user data and score history.
+4. Audits grouped by category, with estimated savings and WordPress tips.
+5. Snapshot comparison.
+6. Settings.
 
 == Changelog ==
+
+= 5.0.0 =
+* New admin interface built with React and the WordPress components, with charts and trends
+* Reports now include all Lighthouse categories: Performance, Accessibility, Best Practices, SEO and AI Agents (Agentic Browsing)
+* Current Lighthouse metrics (LCP, TBT, CLS, FCP, Speed Index) and Core Web Vitals from real users (LCP, INP, CLS)
+* Score history for every page and a daily site trend
+* Audits are grouped like on pagespeed.web.dev, with estimated savings and WordPress tips
+* Import custom URLs from a CSV file (for example a Search Console or crawler export)
+* Fixed: XML sitemap import was rejected on sites that do not allow XML uploads
+* Fixed: rechecking a page now updates its mobile report too, not only the desktop one
+* Fixed: an invalid API key is reported clearly again with the current Google API
+* New "Check key" button: a new API key is verified before the settings are saved
+* Fixed: a PHP notice when a checked page has no real-user (Chrome UX Report) data
+* A clear warning when a scan cannot start because the site blocks requests to itself (maintenance mode, a login wall or the host), with a link to Site Health
+* When the daily API quota is used up, the scan stops with a clear message instead of sending a failing request for every page; a per-minute limit is waited out and the page is tried again
+* The ShortPixel image suggestion works again with current Lighthouse image audits
+* Charts are drawn locally; the admin no longer loads Google Charts
+* If a screen fails to load, it now shows a message with Reload and Try again buttons instead of a blank page
+* Requires WordPress 6.6 and PHP 7.2
+
+= 4.1.0 =
+* Tested with WordPress 7.1
+* Security hardening: database queries, input validation, output escaping, capability and nonce checks
+* Translations: text domain now matches the plugin slug, so WordPress.org language packs work
+* Fixed: plugin settings no longer change when the plugin is updated
+* Minor code quality fixes
+* Removed the NitroPack promotion box (the partner offer is no longer active)
 
 = 4.0.8 =
 * Fix PHP 8 warnings
@@ -245,6 +308,12 @@ Google Pagespeed Insights requires a Google API Key. Keys are free and can be ob
 * Initial Release
 
 == Upgrade Notice ==
+
+= 5.0.0 =
+New interface with all Lighthouse categories, Core Web Vitals and score history. Requires WordPress 6.6 and PHP 7.2. Recheck your pages after updating to fill in the new data.
+
+= 4.1.0 =
+Security hardening and WordPress 7.1 compatibility. Recommended update.
 
 = 4.0.8 =
 * Fix PHP 8 warnings
